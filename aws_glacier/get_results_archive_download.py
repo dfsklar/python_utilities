@@ -12,12 +12,21 @@
 # language governing permissions and limitations under the License.
 
 import json
+import io
 import logging
 import boto3
 from botocore.exceptions import ClientError
 
 
-def retrieve_inventory_results(vault_name, job_id):
+def write_streamingbody_to_file(sb, archive_name):
+    import io
+    with io.FileIO(archive_name, 'wb') as file:
+        while file.write(sb.read(amt=512)):
+            pass
+
+
+
+def retrieve_archivefetch_results(vault_name, job_id):
     """Retrieve the results of an Amazon Glacier inventory-retrieval job
 
     :param vault_name: string
@@ -30,7 +39,9 @@ def retrieve_inventory_results(vault_name, job_id):
     glacier = boto3.client('glacier')
     job_results_in_dict = glacier.get_job_output(vaultName=vault_name, jobId=job_id)
     
-    x = 342
+    sb = job_results_in_dict['body']
+    filename = job_results_in_dict['archiveDescription']
+    write_streamingbody_to_file(sb, '../frontthin-lm_SensiVault_L0_2018_04_18_55793.taz.gpg')
     
     
 
@@ -38,18 +49,17 @@ def retrieve_inventory_results(vault_name, job_id):
 
 
 def main():
-    """Exercise retrieve_inventory_result()"""
 
     # Assign these values before running the program
-    test_vault_name = 'SklarChin'
-    test_job_id = '2bArs0bGcjImOr42E1OU1MAaC2JXESAuMRWfO_NjZrLAdOMVtBJPinblt6jZkovSOONa4IqfgopxsgaNnyLcWj6Tp-CU'
+    vault_name = 'SklarChin'
+    job_id = '2bArs0bGcjImOr42E1OU1MAaC2JXESAuMRWfO_NjZrLAdOMVtBJPinblt6jZkovSOONa4IqfgopxsgaNnyLcWj6Tp-CU'
 
     # Set up logging
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)s: %(asctime)s: %(message)s')
 
     # Retrieve the job results
-    inventory = retrieve_inventory_results(test_vault_name, test_job_id)
+    inventory = retrieve_archivefetch_results(vault_name, job_id)
     if inventory is not None:
         # Output some of the inventory information
         logging.info(f'Vault ARN: {inventory["VaultARN"]}')
